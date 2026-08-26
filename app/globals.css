@@ -1,3 +1,45 @@
+/* Self-hosted licensed webfonts. Clash Display ships as a single variable file
+   (weights 200–700); Satoshi is loaded as the static weights the design uses. */
+@font-face {
+  font-family: "Clash Display";
+  src: url("/fonts/ClashDisplay-Variable.woff2") format("woff2");
+  font-weight: 200 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Satoshi";
+  src: url("/fonts/Satoshi-Regular.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Satoshi";
+  src: url("/fonts/Satoshi-Medium.woff") format("woff");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Satoshi";
+  src: url("/fonts/Satoshi-Bold.woff") format("woff");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Satoshi";
+  src: url("/fonts/Satoshi-Black.woff") format("woff");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --color-background: #050505;
   --color-surface: #0d0d0d;
@@ -12,6 +54,16 @@
   --font-display: "Clash Display", "Arial Black", "Helvetica Neue", sans-serif;
   --font-body: "Satoshi", Inter, Arial, sans-serif;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  /* Display tracking scale. Larger optical sizes want tighter tracking, so
+     these step with the type size rather than applying one value everywhere.
+     They replace a set of hand-tuned -0.06em..-0.1em values that pulled the
+     letters into each other at hero sizes. */
+  --tracking-hero: -0.03em;
+  --tracking-display: -0.022em;
+  --tracking-title: -0.014em;
+  --leading-hero: 0.88;
+  --leading-display: 0.9;
+  --leading-title: 0.94;
   --page-gutter: clamp(1.25rem, 4vw, 5rem);
   --nav-height: 4.5rem;
 }
@@ -217,9 +269,27 @@ p {
   font-family: var(--font-display);
   font-size: clamp(3.5rem, 8.5vw, 9.5rem);
   font-weight: 900;
-  letter-spacing: -0.075em;
-  line-height: 0.82;
+  letter-spacing: var(--tracking-display);
+  line-height: var(--leading-display);
   text-transform: uppercase;
+}
+
+/* Clash Display carries a narrow space glyph, so the display headings still
+   want a little extra word-spacing to keep the inter-word rhythm. This used to
+   be 0.16em to claw back gaps that the old -0.075em tracking was swallowing;
+   now that the tracking scale is sane, it only has the narrow space to correct
+   for. */
+.display-heading,
+.section-title,
+[data-display],
+.display-title,
+.hero-section__title,
+.spin-section__title,
+.science-section__question,
+.moments-section__header h2,
+.cta-section__title,
+.moment-card__title {
+  word-spacing: 0.05em;
 }
 
 .supporting-copy,
@@ -263,7 +333,7 @@ p {
   font-family: var(--font-display);
   font-size: 1rem;
   font-weight: 900;
-  letter-spacing: -0.06em;
+  letter-spacing: var(--tracking-title);
 }
 
 .nav-mark::after,
@@ -451,7 +521,7 @@ p {
   font-family: var(--font-display);
   font-size: clamp(2rem, 4vw, 3.5rem);
   font-weight: 900;
-  letter-spacing: -0.08em;
+  letter-spacing: var(--tracking-display);
   transform: translate(-50%, -50%) rotate(-90deg);
 }
 
@@ -522,8 +592,8 @@ p {
   font-family: var(--font-display);
   font-size: clamp(4.5rem, 11.6vw, 12.6rem);
   font-weight: 900;
-  letter-spacing: -0.085em;
-  line-height: 0.76;
+  letter-spacing: var(--tracking-hero);
+  line-height: var(--leading-hero);
   text-transform: uppercase;
   text-shadow: 0 0 3rem rgba(0, 0, 0, 0.8);
 }
@@ -661,8 +731,8 @@ p {
   font-family: var(--font-display);
   font-size: clamp(4.25rem, 7.8vw, 8rem);
   font-weight: 900;
-  letter-spacing: -0.075em;
-  line-height: 0.8;
+  letter-spacing: var(--tracking-display);
+  line-height: var(--leading-display);
   text-transform: uppercase;
 }
 
@@ -749,8 +819,8 @@ p {
   font-family: var(--font-display);
   font-size: clamp(2.8rem, 6vw, 6rem);
   font-weight: 900;
-  letter-spacing: -0.07em;
-  line-height: 0.9;
+  letter-spacing: var(--tracking-display);
+  line-height: var(--leading-display);
   text-transform: uppercase;
 }
 
@@ -799,7 +869,7 @@ p {
   font-family: var(--font-display);
   font-size: clamp(1.7rem, 3vw, 2.75rem);
   font-weight: 900;
-  letter-spacing: -0.06em;
+  letter-spacing: var(--tracking-title);
 }
 
 .metric-chip__label {
@@ -849,8 +919,8 @@ p {
   font-family: var(--font-display);
   font-size: clamp(8rem, 27vw, 28rem);
   font-weight: 900;
-  letter-spacing: -0.1em;
-  line-height: 0.68;
+  letter-spacing: var(--tracking-hero);
+  line-height: var(--leading-hero);
   text-shadow: 0 0.25rem 0 rgba(0, 0, 0, 0.12);
 }
 
@@ -883,8 +953,8 @@ p {
   font-family: var(--font-display);
   font-size: clamp(4rem, 9vw, 9rem);
   font-weight: 900;
-  letter-spacing: -0.075em;
-  line-height: 0.82;
+  letter-spacing: var(--tracking-display);
+  line-height: var(--leading-display);
   text-transform: uppercase;
 }
 
@@ -905,194 +975,111 @@ p {
 
 .moment-card {
   position: relative;
-  display: grid;
-  width: min(68vw, 62rem);
-  min-width: min(68vw, 62rem);
-  height: min(68vh, 47rem);
-  min-height: 34rem;
-  grid-template-columns: minmax(0, 1.25fr) minmax(16rem, 0.75fr);
+  display: block;
+  width: min(58vw, 50rem);
+  min-width: min(58vw, 50rem);
+  height: min(68vh, 46rem);
+  min-height: 32rem;
   overflow: hidden;
-  border: 1px solid var(--color-border-strong);
-  border-radius: clamp(1.3rem, 2.2vw, 2.25rem);
-  background: var(--color-surface);
-  box-shadow: 0 2rem 5rem rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--color-border);
+  border-radius: clamp(1.1rem, 1.8vw, 1.75rem);
+  background: #060607;
+  box-shadow: 0 1.75rem 4.5rem rgba(0, 0, 0, 0.55);
   list-style: none;
+  transition: border-color 0.55s var(--ease-out), transform 0.55s var(--ease-out);
 }
 
-.moment-card > article {
-  display: grid;
-  width: 100%;
-  height: 100%;
-  grid-template-columns: minmax(0, 1.25fr) minmax(16rem, 0.75fr);
-}
-
+/* The art is inset past the card edge so the horizontal-scrub parallax, which
+   shifts it by up to 4% of its own width, never drags a bare edge into frame. */
 .moment-card__art {
-  position: relative;
-  min-height: 100%;
-  overflow: hidden;
-  transform: scale(1.04);
+  position: absolute;
+  inset: -8%;
   will-change: transform;
 }
 
+.moment-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Two stops rather than one: a broad floor lift that separates the whole card
+   from the page, and a much steeper foot that buys contrast for the caption
+   without dimming the artwork above it. */
+.moment-card__content::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background:
+    linear-gradient(0deg, rgba(4, 4, 5, 0.95) 0%, rgba(4, 4, 5, 0.72) 26%, rgba(4, 4, 5, 0) 62%),
+    linear-gradient(105deg, rgba(4, 4, 5, 0.6) 0%, rgba(4, 4, 5, 0) 55%);
+  content: "";
+  pointer-events: none;
+}
+
 .moment-card__content {
-  position: relative;
+  position: absolute;
   z-index: 2;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  padding: clamp(1.5rem, 3vw, 3rem);
-  border-left: 1px solid var(--color-border);
-  background: linear-gradient(160deg, rgba(255,255,255,.035), transparent 45%);
+  right: 0;
+  bottom: 0;
+  left: 0;
+  isolation: isolate;
+  padding: clamp(1.6rem, 3vw, 3rem);
 }
 
 .moment-card__eyebrow {
-  margin-bottom: auto;
+  display: flex;
+  margin: 0 0 clamp(0.75rem, 1.4vw, 1.15rem);
+  align-items: center;
+  gap: 0.7rem;
   color: var(--color-muted);
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   font-weight: 800;
-  letter-spacing: 0.18em;
-}
-
-.moment-card__title {
-  margin: 0 0 1rem;
-  font-family: var(--font-display);
-  font-size: clamp(3rem, 5vw, 5.8rem);
-  font-weight: 900;
-  letter-spacing: -0.07em;
-  line-height: 0.85;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
 }
 
-.moment-card__copy {
-  max-width: 20rem;
-  margin: 0;
-  color: var(--color-muted);
-  font-size: clamp(0.95rem, 1.2vw, 1.12rem);
-  line-height: 1.5;
+.moment-card__index {
+  color: var(--color-white);
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
 }
 
-.moment-card__shape {
-  position: absolute;
-  display: block;
-}
-
-.moment-card--game .moment-card__art {
-  background:
-    radial-gradient(circle at 72% 30%, rgba(244,0,9,.95) 0 4%, transparent 4.5%),
-    linear-gradient(135deg, #211012, #070707 46%, #181818);
-}
-
-.moment-card--game .moment-card__shape--one {
-  top: 18%;
-  left: 14%;
-  width: 42%;
-  aspect-ratio: 1;
-  transform: rotate(18deg);
-  border: 2px solid rgba(255,255,255,.5);
-  border-radius: 1.8rem;
-  background: linear-gradient(135deg, #1d1d1d, #060606);
-  box-shadow: 0 2rem 4rem rgba(0,0,0,.7);
-}
-
-.moment-card--game .moment-card__shape--two {
-  right: 10%;
-  bottom: 10%;
-  width: 47%;
-  aspect-ratio: 1.6;
-  transform: rotate(-8deg);
-  border: 1px solid rgba(255,255,255,.25);
-  border-radius: 50%;
-  background: radial-gradient(circle at 50% 50%, #f40009 0 5%, #202020 6% 11%, #080808 12% 100%);
-}
-
-.moment-card--gym .moment-card__art {
-  background:
-    linear-gradient(115deg, transparent 45%, rgba(255,255,255,.09) 45.5%, transparent 46%),
-    radial-gradient(circle at 25% 20%, rgba(255,255,255,.16), transparent 30%),
-    #101214;
-}
-
-.moment-card--gym .moment-card__shape--one {
-  top: 14%;
-  left: 30%;
-  width: 18%;
-  height: 72%;
-  transform: rotate(24deg);
-  border-radius: 999px;
-  background: linear-gradient(90deg, #2d3034, #e2e5e8 42%, #565b60 58%, #111);
-  box-shadow: -6rem 3rem 0 -1rem #050505;
-}
-
-.moment-card--gym .moment-card__shape--two {
-  right: 10%;
-  bottom: 16%;
-  width: 40%;
-  height: 0.8rem;
-  transform: rotate(-10deg);
-  border-radius: 999px;
+.moment-card__index::after {
+  display: inline-block;
+  width: 1.6rem;
+  height: 1px;
+  margin-left: 0.7rem;
   background: var(--color-red);
-  box-shadow: 0 0 2.5rem rgba(244,0,9,.45);
+  content: "";
+  vertical-align: middle;
 }
 
-.moment-card--desk .moment-card__art {
-  background:
-    linear-gradient(180deg, transparent 60%, rgba(0,0,0,.7)),
-    radial-gradient(circle at 63% 28%, rgba(244,0,9,.32), transparent 28%),
-    #0b0b0c;
+.moment-card__title {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-display);
+  font-size: clamp(2.6rem, 4.2vw, 4.6rem);
+  font-weight: 900;
+  letter-spacing: var(--tracking-display);
+  line-height: var(--leading-title);
+  text-transform: uppercase;
+  text-wrap: balance;
 }
 
-.moment-card--desk .moment-card__shape--one {
-  top: 18%;
-  left: 12%;
-  width: 66%;
-  height: 54%;
-  transform: perspective(700px) rotateY(-18deg) rotateZ(-3deg);
-  border: 2px solid #292929;
-  border-radius: 0.8rem;
-  background:
-    linear-gradient(90deg, transparent 49%, rgba(255,255,255,.05) 50%, transparent 51%),
-    linear-gradient(#141414, #080808);
-  box-shadow: 0 2rem 4rem rgba(0,0,0,.6), inset 0 0 5rem rgba(244,0,9,.08);
+.moment-card__copy {
+  max-width: 26rem;
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: clamp(0.95rem, 1.15vw, 1.1rem);
+  line-height: 1.55;
 }
 
-.moment-card--desk .moment-card__shape--two {
-  right: 8%;
-  bottom: 15%;
-  width: 35%;
-  height: 0.35rem;
-  transform: rotate(28deg);
-  border-radius: 999px;
-  background: #d5d8da;
-  box-shadow: 0.8rem -0.35rem 0 -0.05rem #f40009;
-}
-
-.moment-card--table .moment-card__art {
-  background:
-    radial-gradient(circle at 20% 30%, rgba(244,0,9,.25), transparent 22%),
-    radial-gradient(circle at 75% 70%, rgba(255,255,255,.09), transparent 26%),
-    linear-gradient(145deg, #181310, #080706);
-}
-
-.moment-card--table .moment-card__shape--one {
-  top: 22%;
-  left: 15%;
-  width: 54%;
-  aspect-ratio: 1.55;
-  transform: rotate(10deg);
-  border: 1px solid rgba(255,255,255,.28);
-  border-radius: 50%;
-  background: radial-gradient(circle, #202020 0 22%, #b6bac0 23% 26%, #090909 27% 100%);
-  box-shadow: 5rem 9rem 0 -2rem rgba(244,0,9,.75), 12rem 1rem 0 -3rem rgba(255,255,255,.25);
-}
-
-.moment-card--table .moment-card__shape--two {
-  right: 13%;
-  bottom: 14%;
-  width: 22%;
-  aspect-ratio: 1;
-  border: 1px solid rgba(255,255,255,.25);
-  border-radius: 50%;
-  box-shadow: inset 0 0 0 0.45rem #121212;
+@media (hover: hover) and (pointer: fine) {
+  .moment-card:hover {
+    border-color: var(--color-border-strong);
+  }
 }
 
 .marquee {
@@ -1159,8 +1146,8 @@ p {
   font-family: var(--font-display);
   font-size: clamp(4.2rem, 7.5vw, 8rem);
   font-weight: 900;
-  letter-spacing: -0.075em;
-  line-height: 0.8;
+  letter-spacing: var(--tracking-display);
+  line-height: var(--leading-display);
   text-transform: uppercase;
 }
 
@@ -1311,7 +1298,7 @@ p {
   font-family: var(--font-display);
   font-size: 1.25rem;
   font-weight: 900;
-  letter-spacing: -0.06em;
+  letter-spacing: var(--tracking-title);
 }
 
 .site-footer__disclaimer {
@@ -1391,10 +1378,9 @@ p {
   }
 
   .moment-card {
-    width: 80vw;
-    min-width: 80vw;
+    width: 72vw;
+    min-width: 72vw;
     height: 62vh;
-    grid-template-columns: 1.1fr 0.9fr;
   }
 
   .cta-section__layout {
@@ -1466,7 +1452,7 @@ p {
   .hero-section__title {
     align-self: center;
     font-size: clamp(4rem, 19vw, 6.6rem);
-    line-height: 0.8;
+    line-height: var(--leading-display);
   }
 
   .hero-section__title-line:last-child {
@@ -1551,7 +1537,7 @@ p {
 
   .science-section__question {
     font-size: clamp(2.65rem, 12vw, 4rem);
-    line-height: 0.91;
+    line-height: var(--leading-title);
   }
 
   .science-section__metrics {
@@ -1620,22 +1606,13 @@ p {
   .moment-card {
     width: 100%;
     min-width: 0;
-    height: auto;
-    min-height: 35rem;
-    grid-template-columns: 1fr;
-    grid-template-rows: minmax(20rem, 1.4fr) auto;
+    height: 26rem;
+    min-height: 0;
     border-radius: 1.25rem;
   }
 
-  .moment-card__art {
-    min-height: 20rem;
-  }
-
   .moment-card__content {
-    min-height: 13rem;
     padding: 1.35rem;
-    border-top: 1px solid var(--color-border);
-    border-left: 0;
   }
 
   .moment-card__eyebrow {

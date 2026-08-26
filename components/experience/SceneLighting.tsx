@@ -34,7 +34,7 @@ export const SceneLighting = forwardRef<SceneLightingHandle, SceneLightingProps>
         if (key.current) {
           key.current.intensity = THREE.MathUtils.damp(
             key.current.intensity,
-            18 * intensity,
+            6.5 * intensity,
             response,
             delta,
           );
@@ -42,7 +42,7 @@ export const SceneLighting = forwardRef<SceneLightingHandle, SceneLightingProps>
         if (redRim.current) {
           redRim.current.intensity = THREE.MathUtils.damp(
             redRim.current.intensity,
-            12 * intensity,
+            4.2 * intensity,
             response,
             delta,
           );
@@ -50,7 +50,7 @@ export const SceneLighting = forwardRef<SceneLightingHandle, SceneLightingProps>
         if (silverRim.current) {
           silverRim.current.intensity = THREE.MathUtils.damp(
             silverRim.current.intensity,
-            8 * intensity,
+            2.8 * intensity,
             response,
             delta,
           );
@@ -58,7 +58,7 @@ export const SceneLighting = forwardRef<SceneLightingHandle, SceneLightingProps>
         if (movingGlint.current) {
           movingGlint.current.intensity = THREE.MathUtils.damp(
             movingGlint.current.intensity,
-            7 * intensity,
+            3.4 * intensity,
             response,
             delta,
           );
@@ -75,7 +75,7 @@ export const SceneLighting = forwardRef<SceneLightingHandle, SceneLightingProps>
 
     return (
       <group name="studio-lighting">
-        <ambientLight color="#c9d2dc" intensity={tier === 'mobile' ? 0.24 : 0.32} />
+        <ambientLight color="#c9d2dc" intensity={tier === 'mobile' ? 0.08 : 0.1} />
         <spotLight
           ref={key}
           name="soft-front-key"

@@ -4,6 +4,7 @@ import {
   useEffect,
   useMemo,
   useRef,
+  useState,
 } from 'react';
 import { EffectComposer } from '@react-three/postprocessing';
 import { useFrame, useThree } from '@react-three/fiber';
@@ -102,6 +103,12 @@ export function ExperienceScene({
   const didSignalReady = useRef(false);
   const fog = useRef(new THREE.FogExp2('#060304', 0.045));
 
+  // Bloom is only meaningful during the First Sip payoff, so the composer (and
+  // its per-frame full-screen passes) is mounted just for that chapter window
+  // instead of running for the entire experience.
+  const [bloomMounted, setBloomMounted] = useState(false);
+  const bloomWindowRef = useRef(false);
+
   useEffect(() => {
     const { scene } = getThree();
     const previousFog = scene.fog;
@@ -114,6 +121,8 @@ export function ExperienceScene({
   }, [getThree]);
 
   useEffect(() => () => bloomEffect.dispose(), [bloomEffect]);
+
+  const postProcessingEnabled = tier !== 'mobile' && !reducedMotion;
 
   useFrame(({ clock, gl }, frameDelta) => {
     const delta = clampDelta(frameDelta);
@@ -208,13 +217,21 @@ export function ExperienceScene({
       delta,
     );
 
+    if (postProcessingEnabled) {
+      // Enter the window slightly before the sip chapter and leave just after so
+      // the composer is present whenever the authored bloom value ramps.
+      const wantBloom = progress > 2.55 && progress < 3.75;
+      if (wantBloom !== bloomWindowRef.current) {
+        bloomWindowRef.current = wantBloom;
+        setBloomMounted(wantBloom);
+      }
+    }
+
     if (!didSignalReady.current) {
       didSignalReady.current = true;
       onReady();
     }
   });
-
-  const postProcessingEnabled = tier !== 'mobile' && !reducedMotion;
 
   return (
     <>
@@ -222,13 +239,13 @@ export function ExperienceScene({
         onContextLost={onContextLost}
         onContextRestored={onContextRestored}
       />
-      <StudioEnvironment />
+      <StudioEnvironment tier={tier} />
       <CameraRig ref={cameraRig} />
       <SceneLighting ref={lighting} tier={tier} />
       <BubbleField ref={bubbles} tier={tier} reducedMotion={reducedMotion} />
-      <ColaCan ref={can} />
+      <ColaCan ref={can} tier={tier} />
 
-      {postProcessingEnabled ? (
+      {postProcessingEnabled && bloomMounted ? (
         <EffectComposer
           multisampling={tier === 'desktop' ? 2 : 0}
           resolutionScale={tier === 'tablet' ? 0.65 : 1}

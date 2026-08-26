@@ -1,3 +1,4 @@
+import { MomentArt } from "@/components/sections/MomentArt";
 import { Marquee } from "@/components/ui/Marquee";
 
 const MOMENTS = [
@@ -62,11 +63,13 @@ export function MomentsSection() {
               data-moment-card
             >
               <div className="moment-card__art" aria-hidden="true" data-moment-art>
-                <span className="moment-card__shape moment-card__shape--one" />
-                <span className="moment-card__shape moment-card__shape--two" />
+                <MomentArt id={moment.id} />
               </div>
               <div className="moment-card__content">
-                <p className="moment-card__eyebrow">MOMENT {moment.number}</p>
+                <p className="moment-card__eyebrow">
+                  <span className="moment-card__index">{moment.number}</span>
+                  Moment
+                </p>
                 <h3 id={`${moment.id}-title`} className="moment-card__title">
                   {moment.title}
                 </h3>

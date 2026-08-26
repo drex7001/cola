@@ -1,25 +1,19 @@
 'use client';
 
-import {
-  forwardRef,
-  useEffect,
-  useImperativeHandle,
-  useMemo,
-  useRef,
-} from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef } from 'react';
 import { useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 
 import type { CameraState } from '@/lib/cameraStates';
+import {
+  buildCanGeometry,
+  buildPullTabGeometry,
+  LID_PANEL_Y,
+  RADIAL_SEGMENTS,
+} from '@/lib/can/canGeometry';
+import { createCanMaterials } from '@/lib/can/canMaterials';
+import { createCanTextures } from '@/lib/can/canTextures';
 import type { ResponsiveTier } from './CameraRig';
-
-const CAN_HEIGHT = 3.2;
-const CAN_RADIUS = 0.95;
-const DROPLET_BASES = [
-  [-0.54, 0.92, 0.79],
-  [0.48, 0.22, 0.85],
-  [-0.22, -0.46, 0.93],
-] as const;
 
 const SCALE_BY_TIER: Record<ResponsiveTier, number> = {
   mobile: 0.82,
@@ -33,6 +27,20 @@ const X_SPREAD_BY_TIER: Record<ResponsiveTier, number> = {
   desktop: 1,
 };
 
+/**
+ * A handful of beads large enough to break surface tension and run. The static
+ * condensation lives in the normal map; these are only the ones that move.
+ */
+const DRIPS = [
+  { angle: -0.42, y: 0.86, size: 0.05, speed: 0.055 },
+  { angle: 0.34, y: 0.32, size: 0.042, speed: 0.043 },
+  { angle: -0.12, y: -0.24, size: 0.058, speed: 0.062 },
+  { angle: 0.66, y: 1.12, size: 0.038, speed: 0.037 },
+] as const;
+
+/** Body radius in scene units, so drips can be parked on the surface. */
+const SURFACE_RADIUS = 0.905;
+
 export type ColaCanHandle = {
   update: (
     state: CameraState,
@@ -45,99 +53,38 @@ export type ColaCanHandle = {
   ) => void;
 };
 
-function drawTrackedText(
-  context: CanvasRenderingContext2D,
-  text: string,
-  centerX: number,
-  baselineY: number,
-  tracking: number,
+export type ColaCanProps = {
+  tier: ResponsiveTier;
+};
+
+export const ColaCan = forwardRef<ColaCanHandle, ColaCanProps>(function ColaCan(
+  { tier },
+  ref,
 ) {
-  const glyphWidths = [...text].map((glyph) => context.measureText(glyph).width);
-  const totalWidth =
-    glyphWidths.reduce((total, width) => total + width, 0) + tracking * (text.length - 1);
-  let cursor = centerX - totalWidth / 2;
-
-  [...text].forEach((glyph, index) => {
-    context.fillText(glyph, cursor, baselineY);
-    cursor += glyphWidths[index] + tracking;
-  });
-}
-
-function createZeroTexture(anisotropy: number) {
-  const canvas = document.createElement('canvas');
-  canvas.width = 1024;
-  canvas.height = 384;
-  const context = canvas.getContext('2d');
-
-  if (!context) return null;
-
-  context.clearRect(0, 0, canvas.width, canvas.height);
-  context.fillStyle = '#ffffff';
-  context.textAlign = 'left';
-  context.textBaseline = 'middle';
-  context.font = '900 152px "Arial Black", "Helvetica Neue", Arial, sans-serif';
-  drawTrackedText(context, 'ZERO', canvas.width / 2, canvas.height / 2 + 8, 12);
-
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.name = 'procedural-zero-label';
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = Math.min(8, anisotropy);
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.ClampToEdgeWrapping;
-  // CylinderGeometry places its UV seam toward the viewer in the opening
-  // pose, so a half-turn centers the wordmark on the visible face.
-  texture.offset.x = 0.4;
-  texture.needsUpdate = true;
-  return texture;
-}
-
-export const ColaCan = forwardRef<ColaCanHandle>(function ColaCan(_, ref) {
   const gl = useThree((state) => state.gl);
   const group = useRef<THREE.Group>(null);
-  const bandMaterial = useRef<THREE.MeshStandardMaterial>(null);
-  const labelMaterial = useRef<THREE.MeshStandardMaterial>(null);
-  const droplets = useRef<Array<THREE.Mesh | null>>([]);
-  const targetBandColor = useRef(new THREE.Color('#f40009'));
-  const zeroTexture = useMemo(
-    () => createZeroTexture(gl.capabilities.getMaxAnisotropy()),
-    [gl],
-  );
+  const drips = useRef<Array<THREE.Mesh | null>>([]);
+  const targetTint = useRef(new THREE.Color('#f40009'));
+  const reveal = useRef(new THREE.Color());
 
-  const aluminumMaterial = useMemo(
-    () =>
-      new THREE.MeshStandardMaterial({
-        color: '#c7ccd1',
-        metalness: 0.92,
-        roughness: 0.24,
-      }),
-    [],
-  );
+  // Geometry, textures and materials are all derived from the tier, so a
+  // breakpoint change rebuilds exactly one memo chain and nothing else.
+  const segments = RADIAL_SEGMENTS[tier];
+  const geometry = useMemo(() => buildCanGeometry(segments), [segments]);
+  const tabGeometry = useMemo(() => buildPullTabGeometry(), []);
+  const dripGeometry = useMemo(() => new THREE.SphereGeometry(1, 12, 10), []);
 
-  const dropletGeometry = useMemo(() => new THREE.SphereGeometry(0.095, 16, 12), []);
-  const dropletMaterial = useMemo(
-    () =>
-      new THREE.MeshPhysicalMaterial({
-        color: '#e8f3ff',
-        metalness: 0,
-        roughness: 0.08,
-        transmission: 0.72,
-        thickness: 0.08,
-        transparent: true,
-        opacity: 0.72,
-      }),
-    [],
+  const textures = useMemo(
+    () => createCanTextures(tier, gl.capabilities.getMaxAnisotropy()),
+    [tier, gl],
   );
+  const materials = useMemo(() => createCanMaterials(textures), [textures]);
 
-  useEffect(() => () => zeroTexture?.dispose(), [zeroTexture]);
-
-  useEffect(
-    () => () => {
-      aluminumMaterial.dispose();
-      dropletGeometry.dispose();
-      dropletMaterial.dispose();
-    },
-    [aluminumMaterial, dropletGeometry, dropletMaterial],
-  );
+  useEffect(() => () => geometry.dispose(), [geometry]);
+  useEffect(() => () => tabGeometry.dispose(), [tabGeometry]);
+  useEffect(() => () => dripGeometry.dispose(), [dripGeometry]);
+  useEffect(() => () => textures.dispose(), [textures]);
+  useEffect(() => () => materials.dispose(), [materials]);
 
   useImperativeHandle(ref, () => ({
     update(state, progress, elapsed, delta, bandColor, reducedMotion, tier) {
@@ -149,7 +96,8 @@ export const ColaCan = forwardRef<ColaCanHandle>(function ColaCan(_, ref) {
       const xSpread = X_SPREAD_BY_TIER[tier];
       const tierScale = SCALE_BY_TIER[tier];
       const finalDrift = !reducedMotion && progress > 4.55 ? elapsed * 0.055 : 0;
-      const heroBreath = !reducedMotion && progress < 0.7 ? Math.sin(elapsed * 0.48) * 0.018 : 0;
+      const heroBreath =
+        !reducedMotion && progress < 0.7 ? Math.sin(elapsed * 0.48) * 0.018 : 0;
 
       group.current.position.x = THREE.MathUtils.damp(
         group.current.position.x,
@@ -189,152 +137,72 @@ export const ColaCan = forwardRef<ColaCanHandle>(function ColaCan(_, ref) {
       );
 
       const desiredScale = state.canScale * tierScale;
-      const nextScale = THREE.MathUtils.damp(
-        group.current.scale.x,
-        desiredScale,
-        response,
-        delta,
+      group.current.scale.setScalar(
+        THREE.MathUtils.damp(group.current.scale.x, desiredScale, response, delta),
       );
-      group.current.scale.setScalar(nextScale);
 
-      if (bandMaterial.current) {
-        targetBandColor.current.set(bandColor || '#f40009');
-        const bandReveal = reducedMotion
-          ? 1
-          : THREE.MathUtils.lerp(
-              0.22,
-              1,
-              THREE.MathUtils.smoothstep(progress, 0.08, 0.62),
-            );
-        targetBandColor.current.multiplyScalar(bandReveal);
-        bandMaterial.current.color.lerp(
-          targetBandColor.current,
-          1 - Math.exp(-delta * (reducedMotion ? 16 : 7)),
-        );
-        bandMaterial.current.emissive.copy(bandMaterial.current.color).multiplyScalar(0.08);
-      }
+      // The pack emerges out of the void rather than cutting in: multiplying the
+      // base colour dims the printed artwork towards black without needing a
+      // second material or a transparency pass.
+      const emergence = reducedMotion
+        ? 1
+        : THREE.MathUtils.lerp(
+            0.3,
+            1,
+            THREE.MathUtils.smoothstep(progress, 0.04, 0.62),
+          );
+      reveal.current.setScalar(emergence);
+      const settle = 1 - Math.exp(-delta * (reducedMotion ? 16 : 7));
+      materials.body.color.lerp(reveal.current, settle);
+      materials.lid.color.lerp(reveal.current, settle);
+      materials.metal.color.lerp(
+        reveal.current.clone().multiply(new THREE.Color('#cbd0d7')),
+        settle,
+      );
 
-      if (labelMaterial.current) {
-        const labelReveal = reducedMotion
-          ? 1
-          : THREE.MathUtils.lerp(
-              0.16,
-              1,
-              THREE.MathUtils.smoothstep(progress, 0.12, 0.86),
-            );
-        labelMaterial.current.opacity = THREE.MathUtils.damp(
-          labelMaterial.current.opacity,
-          labelReveal,
-          7,
-          delta,
-        );
-      }
+      targetTint.current.set(bandColor || '#f40009');
+      materials.tint.colour.value.lerp(targetTint.current, settle);
 
-      const dropletsMove = !reducedMotion && progress > 0.58 && progress < 1.72;
-      droplets.current.forEach((droplet, index) => {
-        if (!droplet) return;
-        const [, baseY] = DROPLET_BASES[index];
-        const travel = dropletsMove ? (elapsed * (0.035 + index * 0.009)) % 0.48 : 0;
-        droplet.position.y = baseY - travel;
+      // Drips only run while the can is being inspected up close.
+      const running = !reducedMotion && progress > 0.58 && progress < 2.4;
+      drips.current.forEach((drip, index) => {
+        if (!drip) return;
+        const spec = DRIPS[index];
+        const travel = running ? (elapsed * spec.speed) % 0.62 : 0;
+        drip.position.y = spec.y - travel;
+        // A bead stretches as it accelerates down the wall.
+        drip.scale.set(spec.size * 0.82, spec.size * (1.5 + travel * 1.6), spec.size * 0.6);
       });
     },
   }));
 
   return (
-    <group ref={group} name="primary-zero-can" rotation-order="YXZ">
-      <mesh material={aluminumMaterial} name="aluminum-body">
-        <cylinderGeometry args={[CAN_RADIUS, CAN_RADIUS, CAN_HEIGHT, 64, 1, false]} />
-      </mesh>
-
-      <mesh name="matte-black-label" renderOrder={1}>
-        <cylinderGeometry args={[CAN_RADIUS + 0.006, CAN_RADIUS + 0.006, 2.77, 64, 1, true]} />
-        <meshStandardMaterial
-          color="#090909"
-          metalness={0.68}
-          roughness={0.37}
-          polygonOffset
-          polygonOffsetFactor={-1}
-        />
-      </mesh>
-
-      <mesh name="flavor-band" position={[0, -0.72, 0]} renderOrder={2}>
-        <cylinderGeometry args={[CAN_RADIUS + 0.015, CAN_RADIUS + 0.015, 0.34, 64, 1, true]} />
-        <meshStandardMaterial
-          ref={bandMaterial}
-          color="#f40009"
-          emissive="#180001"
-          emissiveIntensity={0.42}
-          metalness={0.52}
-          roughness={0.3}
-          polygonOffset
-          polygonOffsetFactor={-2}
-        />
-      </mesh>
-
-      <mesh name="zero-label" position={[0, 0.22, 0]} renderOrder={3}>
-        <cylinderGeometry
-          args={[CAN_RADIUS + 0.021, CAN_RADIUS + 0.021, 0.82, 64, 1, true]}
-        />
-        <meshStandardMaterial
-          ref={labelMaterial}
-          color="#ffffff"
-          map={zeroTexture ?? undefined}
-          alphaMap={zeroTexture ?? undefined}
-          transparent
-          alphaTest={0.08}
-          depthWrite={false}
-          metalness={0.38}
-          roughness={0.34}
-          polygonOffset
-          polygonOffsetFactor={-3}
-        />
-      </mesh>
-
-      <mesh material={aluminumMaterial} name="top" position={[0, CAN_HEIGHT / 2 + 0.015, 0]}>
-        <cylinderGeometry args={[0.88, 0.92, 0.085, 64]} />
-      </mesh>
-      <mesh material={aluminumMaterial} name="bottom" position={[0, -CAN_HEIGHT / 2 - 0.015, 0]}>
-        <cylinderGeometry args={[0.92, 0.87, 0.08, 64]} />
-      </mesh>
+    <group ref={group} name="primary-cola-can" rotation-order="YXZ">
+      <mesh geometry={geometry} material={materials.slots} name="can-shell" />
 
       <mesh
-        material={aluminumMaterial}
-        name="top-rim"
-        position={[0, CAN_HEIGHT / 2 + 0.065, 0]}
-        rotation={[Math.PI / 2, 0, 0]}
-      >
-        <torusGeometry args={[0.885, 0.052, 10, 64]} />
-      </mesh>
-      <mesh
-        material={aluminumMaterial}
-        name="bottom-rim"
-        position={[0, -CAN_HEIGHT / 2 - 0.06, 0]}
-        rotation={[Math.PI / 2, 0, 0]}
-      >
-        <torusGeometry args={[0.885, 0.052, 10, 64]} />
-      </mesh>
+        geometry={tabGeometry}
+        material={materials.tab}
+        name="stay-on-tab"
+        position={[0, LID_PANEL_Y + 0.004, 0]}
+      />
 
-      <mesh
-        material={aluminumMaterial}
-        name="pull-tab"
-        position={[0, CAN_HEIGHT / 2 + 0.115, 0.04]}
-        rotation={[Math.PI / 2, 0, 0]}
-        scale={[0.62, 1, 1.12]}
-      >
-        <torusGeometry args={[0.22, 0.055, 10, 32]} />
-      </mesh>
-
-      {DROPLET_BASES.map(([x, y, z], index) => (
+      {DRIPS.map((drip, index) => (
         <mesh
-          key={`${x}-${y}`}
+          key={drip.angle}
           ref={(node) => {
-            droplets.current[index] = node;
+            drips.current[index] = node;
           }}
-          name={`condensation-droplet-${index + 1}`}
-          geometry={dropletGeometry}
-          material={dropletMaterial}
-          position={[x, y, z]}
-          scale={[0.72 + index * 0.13, 1.35 + index * 0.16, 0.48]}
+          name={`running-drip-${index + 1}`}
+          geometry={dripGeometry}
+          material={materials.droplet}
+          position={[
+            Math.sin(drip.angle) * SURFACE_RADIUS,
+            drip.y,
+            Math.cos(drip.angle) * SURFACE_RADIUS,
+          ]}
+          rotation={[0, drip.angle, 0]}
+          scale={[drip.size * 0.82, drip.size * 1.5, drip.size * 0.6]}
         />
       ))}
     </group>

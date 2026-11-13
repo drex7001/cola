@@ -559,9 +559,7 @@ p {
   position: absolute;
   z-index: 0;
   inset: 0;
-  background:
-    linear-gradient(180deg, rgba(5, 5, 5, 0.5), transparent 30%, transparent 70%, rgba(5, 5, 5, 0.7)),
-    radial-gradient(circle at 50% 35%, transparent 0 15%, rgba(5, 5, 5, 0.16) 48%, rgba(5, 5, 5, 0.7) 100%);
+  background: transparent;
   content: "";
   pointer-events: none;
 }
